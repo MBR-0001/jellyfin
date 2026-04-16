@@ -197,9 +197,6 @@ namespace MediaBrowser.Providers.MediaInfo
             IReadOnlyList<MediaAttachment> mediaAttachments;
             ChapterInfo[] chapters;
 
-            // Add external streams before adding the streams from the file to preserve stream IDs on remote videos
-            await AddExternalSubtitlesAsync(video, mediaStreams, options, cancellationToken).ConfigureAwait(false);
-
             await AddExternalAudioAsync(video, mediaStreams, options, cancellationToken).ConfigureAwait(false);
 
             var startIndex = mediaStreams.Count == 0 ? 0 : (mediaStreams.Max(i => i.Index) + 1);
@@ -242,6 +239,9 @@ namespace MediaBrowser.Providers.MediaInfo
                 mediaAttachments = [];
                 chapters = [];
             }
+
+            // Add external streams last but insert at the beginning to preserve stream IDs on remote videos
+            await AddExternalSubtitlesAsync(video, mediaStreams, options, cancellationToken).ConfigureAwait(false);
 
             var libraryOptions = _libraryManager.GetLibraryOptions(video);
 
@@ -604,7 +604,8 @@ namespace MediaBrowser.Providers.MediaInfo
 
             video.SubtitleFiles = externalSubtitleStreams.Select(i => i.Path).Distinct().ToArray();
 
-            currentStreams.AddRange(externalSubtitleStreams);
+            // Insert external streams before the streams from the file to preserve stream IDs on remote videos
+            currentStreams.InsertRange(0, externalSubtitleStreams);
         }
 
         /// <summary>
